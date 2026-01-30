@@ -136,21 +136,21 @@ else:
         is_matched = idx in st.session_state.matched_indices
         is_flipped = idx in st.session_state.flipped_indices or is_matched
                 
-                if is_matched:
-                    style, content, label = "card-matched", card['content'], "ΣΩΣΤΟ! ✅"
-                elif is_flipped:
-                    style = "card-question" if card['type'] == 'q' else "card-answer"
-                    label = "ΠΡΑΞΗ" if card['type'] == 'q' else "ΑΠΟΤΕΛΕΣΜΑ"
-                    content = card['content']
-                else:
-                    style, content, label = "card-closed", "BRAIN<br>GAME", ""
+        if is_matched:
+            style, content, label = "card-matched", card['content'], "ΣΩΣΤΟ! ✅"
+        elif is_flipped:
+            style = "card-question" if card['type'] == 'q' else "card-answer"
+            label = "ΠΡΑΞΗ" if card['type'] == 'q' else "ΑΠΟΤΕΛΕΣΜΑ"
+            content = card['content']
+        else:
+            style, content, label = "card-closed", "BRAIN<br>GAME", ""
 
-                with cols[col]:
-                    st.markdown(f'<div class="big-card {style}"><div>{content}</div><div class="card-label">{label}</div></div>', unsafe_allow_html=True)
-                    btn_label = "ΠΑΤΑ" if not is_flipped else "---"
-                    if st.button(btn_label, key=f"btn_{idx}", disabled=is_flipped or len(st.session_state.flipped_indices) >= 2, use_container_width=True):
-                        st.session_state.flipped_indices.append(idx)
-                        st.rerun()
+        with cols[col]:
+            st.markdown(f'<div class="big-card {style}"><div>{content}</div><div class="card-label">{label}</div></div>', unsafe_allow_html=True)
+            btn_label = "ΠΑΤΑ" if not is_flipped else "---"
+            if st.button(btn_label, key=f"btn_{idx}", disabled=is_flipped or len(st.session_state.flipped_indices) >= 2, use_container_width=True):
+                st.session_state.flipped_indices.append(idx)
+                st.rerun()
 
         if len(st.session_state.flipped_indices) == 2:
             st.session_state.attempts += 1
