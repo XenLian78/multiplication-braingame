@@ -18,8 +18,8 @@ st.markdown("""
     .card-answer { background-color: #e0f2fe; color: #0369a1; border-color: #0ea5e9; font-size: 32px; }
     .card-matched { background-color: #d1ffdb; color: #1b5e20; border-color: #4caf50; font-size: 28px; }
     .card-label { font-size: 12px; text-transform: uppercase; margin-top: 10px; font-weight: normal; opacity: 0.8; }
-    
-    /* ΣΤΥΛ ΓΙΑ ΤΟ ΜΕΓΑΛΟ ΦΙΝΑΛΕ */
+
+    /* ΤΟ ΜΕΓΑΛΟ ΦΙΝΑΛΕ CSS */
     .finish-box {
         background-color: #e0f2fe;
         border: 6px solid #0077b6;
@@ -38,11 +38,13 @@ def format_time(seconds):
     mins, secs = divmod(int(seconds), 60)
     return f"{mins:02d}:{secs:02d}"
 
-if 'game_running' not in st.session_state: st.session_state.game_running = False
-if 'game_finished' not in st.session_state: st.session_state.game_finished = False
+if 'game_running' not in st.session_state:
+    st.session_state.game_running = False
+if 'show_finish' not in st.session_state:
+    st.session_state.show_finish = False
 
 # --- ΑΡΧΙΚΗ ΟΘΟΝΗ ---
-if not st.session_state.game_running and not st.session_state.game_finished:
+if not st.session_state.game_running and not st.session_state.show_finish:
     st.title("🧠 Brain Game: Προπαίδεια")
     st.subheader("Ποιους αριθμούς θα μάθουμε σήμερα;")
     cols = st.columns(5)
@@ -59,7 +61,11 @@ if not st.session_state.game_running and not st.session_state.game_finished:
             deck.append({'content': p[0], 'value': p[1], 'type': 'q'})
             deck.append({'content': str(p[1]), 'value': p[1], 'type': 'a'})
         random.shuffle(deck)
-        st.session_state.update({'deck': deck, 'matched_indices': [], 'flipped_indices': [], 'attempts': 0, 'start_time': time.time(), 'finish_time': None, 'game_running': True, 'game_finished': False})
+        st.session_state.update({
+            'deck': deck, 'matched_indices': [], 'flipped_indices': [], 
+            'attempts': 0, 'start_time': time.time(), 'finish_time': None, 
+            'game_running': True, 'show_finish': False
+        })
         st.rerun()
 
 # --- ΚΥΡΙΟ ΠΑΙΧΝΙΔΙ ---
@@ -68,6 +74,7 @@ elif st.session_state.game_running:
     c1, c2 = st.columns(2)
     c1.metric("⏱️ Χρόνος", format_time(elapsed))
     c2.metric("🔄 Προσπάθειες", st.session_state.attempts)
+    
     for row in range(3):
         cols = st.columns(4)
         for col in range(4):
@@ -82,7 +89,43 @@ elif st.session_state.game_running:
                 content = f'<div>{card["content"]}</div><div class="card-label">{label}</div>'
             else:
                 style, content = "card-closed", '<div class="brain-text">BRAIN<br>GAME</div>'
+            
             with cols[col]:
                 st.markdown(f'<div class="big-card {style}">{content}</div>', unsafe_allow_html=True)
                 lbl = "ΠΑΤΑ ΕΔΩ" if not (flipped or matched) else "---"
-                if st.button(lbl, key=f"b_{idx}", disabled=flipped or matched or len(st.session_state.flipped_indices
+                if st.button(lbl, key=f"b_{idx}", disabled=flipped or matched or len(st.session_state.flipped_indices) >= 2, use_container_width=True):
+                    st.session_state.flipped_indices.append(idx)
+                    st.rerun()
+
+    if len(st.session_state.flipped_indices) == 2:
+        st.session_state.attempts += 1
+        i1, i2 = st.session_state.flipped_indices
+        if st.session_state.deck[i1]['value'] == st.session_state.deck[i2]['value'] and st.session_state.deck[i1]['type'] != st.session_state.deck[i2]['type']:
+            st.session_state.matched_indices.extend([i1, i2])
+        else:
+            time.sleep(1.2)
+        st.session_state.flipped_indices = []
+        st.rerun()
+
+    if len(st.session_state.matched_indices) == 12:
+        st.session_state.finish_time = elapsed
+        st.session_state.game_running = False
+        st.session_state.show_finish = True
+        st.rerun()
+
+# --- ΜΕΓΑΛΟ ΦΙΝΑΛΕ (ΞΕΧΩΡΙΣΤΗ ΣΕΛΙΔΑ) ---
+elif st.session_state.show_finish:
+    st.balloons()
+    st.markdown(f"""
+        <div class="finish-box">
+            <h1 style='font-size: 50px; margin-bottom: 0px;'>🎉 Μπράβο!</h1>
+            <h2 style='font-size: 30px; margin-top: 0px;'>Τα κατάφερες.</h2>
+            <hr style='border: 1px solid #0077b6; opacity: 0.1; margin: 25px 0;'>
+            <p style='font-size: 35px;'>⏱️ Χρόνος: {format_time(st.session_state.finish_time)}</p>
+            <p style='font-size: 25px;'>🔄 Προσπάθειες: {st.session_state.attempts}</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("🔄 ΠΑΙΞΕ ΞΑΝΑ", type="primary", use_container_width=True):
+        st.session_state.show_finish = False
+        st.rerun()
