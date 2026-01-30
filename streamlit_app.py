@@ -128,8 +128,8 @@ else:
     c2.metric("🔄 Προσπάθειες", st.session_state.attempts)
 
         # Πλέγμα Καρτών
-        for row in range(3):
-            cols = st.columns(4)
+    for row in range(3):
+        cols = st.columns(4)
             for col in range(4):
                 idx = row * 4 + col
                 card = st.session_state.deck[idx]
