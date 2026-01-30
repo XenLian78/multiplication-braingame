@@ -5,60 +5,67 @@ import time
 # 1. Ρύθμιση σελίδας
 st.set_page_config(page_title="Brain Game: Προπαίδεια", page_icon="🧠", layout="centered")
 
-# 2. CSS για Σταθερότητα, Μείωση Κενών και Εμφάνιση
+# 2. CSS για την εξάλειψη των κενών (margins/paddings)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
 
-    /* 1. Αφαίρεση περιττών κενών από την κορυφή και το πλάι */
+    /* 1. Μηδενισμός κενού στην κορυφή της σελίδας */
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 0rem !important;
         padding-bottom: 0rem !important;
-        max-width: 800px !important;
+        margin-top: -30px !important;
     }
     
-    /* 2. Μείωση κενού ανάμεσα στα widgets */
+    /* 2. Εξαφάνιση του Header του Streamlit */
+    header {visibility: hidden;}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+
+    /* 3. Μείωση κενού ανάμεσα στα widgets (αυτό που κύκλωσες με κόκκινο) */
     [data-testid="stVerticalBlock"] {
-        gap: 0.3rem !important;
+        gap: 0rem !important;
+    }
+    
+    /* 4. Μείωση κενού ανάμεσα σε κείμενο και κουμπί */
+    div.stMarkdown {
+        margin-bottom: -10px !important;
     }
 
     .stApp { background-color: #f0f7ff; }
     
-    /* 3. Μεγάλα Μπλε Κουμπιά (Full Width) */
+    /* 5. Μεγάλα Μπλε Κουμπιά (Full Width) */
     div.stButton > button[kind="primary"] {
         background-color: #0077b6 !important;
         color: white !important;
-        height: 80px !important;
-        font-size: 32px !important;
-        border-radius: 20px !important;
+        height: 70px !important;
+        font-size: 28px !important;
+        border-radius: 15px !important;
         font-weight: bold !important;
         width: 100% !important;
-        box-shadow: 0 4px 15px rgba(0,119,182,0.3) !important;
-        border: none !important;
+        margin-top: 5px !important;
     }
 
     /* Σταθερό Κοντέινερ Καρτών */
     [data-testid="stColumn"] {
-        min-height: 190px !important;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
+        min-height: 160px !important; /* Μειώθηκε για να χωράει */
+        gap: 0rem !important;
     }
 
-    /* Στυλ Κάρτας */
+    /* Στυλ Κάρτας - Πιο compact */
     .big-card {
         width: 100%;
-        height: 130px;
+        height: 110px; /* Μειώθηκε το ύψος */
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        border-radius: 20px;
+        border-radius: 15px;
         font-weight: bold;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-        border: 4px solid;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border: 3px solid;
         text-align: center;
-        margin-bottom: 5px;
+        margin-bottom: 2px !important;
     }
 
     .card-closed { 
@@ -69,27 +76,32 @@ st.markdown("""
     
     .brain-text {
         font-family: 'Fredoka One', cursive;
-        font-size: 20px;
-        letter-spacing: 1px;
-        text-shadow: 2px 2px #023e8a;
+        font-size: 18px;
+        line-height: 1;
     }
 
-    .card-question { background-color: white; color: #495057; border-color: #a2d2ff; font-size: 26px; }
-    .card-answer { background-color: #e0f2fe; color: #0369a1; border-color: #0ea5e9; font-size: 30px; }
-    .card-matched { background-color: #d1ffdb; color: #1b5e20; border-color: #4caf50; font-size: 26px; }
-    .card-label { font-size: 11px; text-transform: uppercase; margin-top: 5px; font-weight: normal; opacity: 0.8; }
+    .card-question { background-color: white; color: #495057; border-color: #a2d2ff; font-size: 24px; }
+    .card-answer { background-color: #e0f2fe; color: #0369a1; border-color: #0ea5e9; font-size: 28px; }
+    .card-matched { background-color: #d1ffdb; color: #1b5e20; border-color: #4caf50; font-size: 24px; }
+    
+    /* Μικρότερα κουμπιά "ΠΑΤΑ ΕΔΩ" για εξοικονόμηση χώρου */
+    div.stButton > button:not([kind="primary"]) {
+        padding-top: 0px !important;
+        padding-bottom: 0px !important;
+        height: 30px !important;
+        font-size: 12px !important;
+    }
 
-    /* 4. Το Μεγάλο Γαλάζιο Πλαίσιο Τέλους */
+    /* Το Μεγάλο Γαλάζιο Πλαίσιο Τέλους */
     .finish-box {
         background-color: #e0f2fe;
-        border: 6px solid #0077b6;
-        border-radius: 30px;
-        padding: 40px;
+        border: 5px solid #0077b6;
+        border-radius: 25px;
+        padding: 20px;
         text-align: center;
-        margin: 10px 0px;
+        margin-top: 10px;
         color: #0077b6;
         font-family: 'Fredoka One', cursive;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -103,18 +115,16 @@ if 'game_running' not in st.session_state:
 
 # --- ΑΡΧΙΚΗ ΟΘΟΝΗ ---
 if not st.session_state.game_running:
-    st.title("🧠 Brain Game: Προπαίδεια")
-    st.markdown("### Ποιους αριθμούς θα μάθουμε σήμερα;")
+    st.markdown("## 🧠 Brain Game: Προπαίδεια")
+    st.markdown("#### Ποιους αριθμούς θα μάθουμε σήμερα;")
     
-    # Πιο μαζεμένο grid για τα checkboxes
     cols = st.columns(5)
     selected = [i for i in range(1, 11) if cols[(i-1)%5].checkbox(str(i), key=f"sel_{i}")]
     
     if not selected:
-        st.info("ℹ️ Επίλεξε αριθμούς για να ξεκινήσεις!")
+        st.info("ℹ️ Επίλεξε αριθμούς!")
     else:
-        # Το κουμπί πιάνει όλο το πλάτος και είναι κολλημένο στους αριθμούς
-        if st.button("🚀 ΞΕΚΙΝΑΜΕ!", type="primary", use_container_width=True):
+        if st.button("🚀 ΞΕΚΙΝΑΜΕ!", type="primary"):
             all_pairs = []
             for n in selected:
                 for i in range(1, 11):
@@ -140,7 +150,6 @@ if not st.session_state.game_running:
 else:
     elapsed = time.time() - st.session_state.start_time if not st.session_state.finish_time else st.session_state.finish_time
     
-    # Αν το παιχνίδι ΔΕΝ έχει τελειώσει
     if len(st.session_state.matched_indices) < 12:
         c1, c2 = st.columns(2)
         c1.metric("⏱️ Χρόνος", format_time(elapsed))
@@ -155,24 +164,20 @@ else:
                 is_flipped = idx in st.session_state.flipped_indices or is_matched
                 
                 if is_matched:
-                    style = "card-matched"
-                    content = f'<div>{card["content"]}</div><div class="card-label">ΣΩΣΤΟ! ✅</div>'
+                    style, content = "card-matched", f'<div>{card["content"]}</div>'
                 elif is_flipped:
                     style = "card-question" if card['type'] == 'q' else "card-answer"
-                    label = "ΠΡΑΞΗ" if card['type'] == 'q' else "ΑΠΟΤΕΛΕΣΜΑ"
-                    content = f'<div>{card["content"]}</div><div class="card-label">{label}</div>'
+                    content = f'<div>{card["content"]}</div>'
                 else:
-                    style = "card-closed"
-                    content = '<div class="brain-text">BRAIN<br>GAME</div>'
+                    style, content = "card-closed", '<div class="brain-text">BRAIN<br>GAME</div>'
 
                 with cols[col]:
                     st.markdown(f'<div class="big-card {style}">{content}</div>', unsafe_allow_html=True)
-                    btn_label = "ΠΑΤΑ ΕΔΩ" if not is_flipped else "---"
+                    btn_label = "ΚΛΙΚ" if not is_flipped else "---"
                     if st.button(btn_label, key=f"btn_{idx}", disabled=is_flipped or len(st.session_state.flipped_indices) >= 2, use_container_width=True):
                         st.session_state.flipped_indices.append(idx)
                         st.rerun()
 
-        # Match Logic
         if len(st.session_state.flipped_indices) == 2:
             st.session_state.attempts += 1
             i1, i2 = st.session_state.flipped_indices
@@ -181,25 +186,18 @@ else:
                 st.session_state.flipped_indices = []
                 st.rerun()
             else:
-                time.sleep(1.2)
+                time.sleep(1.0)
                 st.session_state.flipped_indices = []
                 st.rerun()
-
-    # --- ΦΙΝΑΛΕ ---
     else:
-        st.session_state.finish_time = elapsed
         st.balloons()
-        
-        # Το εντυπωσιακό γαλάζιο πλαίσιο
         st.markdown(f"""
             <div class="finish-box">
-                <h1 style='font-size: 50px; margin-bottom: 0px;'>🎉 Μπράβο!</h1>
-                <h2 style='font-size: 35px; margin-top: 0px;'>Τα κατάφερες.</h2>
-                <hr style='border: 1px solid #0077b6; opacity: 0.2; margin: 20px 0;'>
-                <p style='font-size: 35px;'>⏱️ Χρόνος: {format_time(elapsed)}</p>
+                <h1 style='font-size: 40px;'>🎉 ΤΕΛΟΣ!</h1>
+                <p style='font-size: 25px;'>Χρόνος: {format_time(elapsed)}<br>Προσπάθειες: {st.session_state.attempts}</p>
             </div>
         """, unsafe_allow_html=True)
         
-        if st.button("🔄 ΠΑΙΞΕ ΞΑΝΑ", type="primary", use_container_width=True):
+        if st.button("🔄 ΠΑΙΞΕ ΞΑΝΑ", type="primary"):
             st.session_state.game_running = False
             st.rerun()
