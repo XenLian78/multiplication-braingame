@@ -9,7 +9,24 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
     .stApp { background-color: #f0f7ff; }
-    div.stButton > button[kind="primary"] { background-color: #0077b6 !important; color: white !important; height: 65px !important; font-size: 26px !important; border-radius: 15px !important; font-weight: bold !important; }
+    
+    div.stButton > button[kind="primary"] { 
+        background-color: #0077b6 !important; 
+        color: white !important; 
+        height: 65px !important; 
+        font-size: 26px !important; 
+        border-radius: 15px !important; 
+        font-weight: bold !important;
+        outline: none !important; /* Αφαίρεση περιγράμματος */
+        box-shadow: none !important; /* Αφαίρεση σκιάς που μπορεί να μοιάζει με περίγραμμα */
+        border: none !important;
+    }
+
+    /* Ξεκόλλημα του κουμπιού ΠΑΙΞΕ ΞΑΝΑ στο φινάλε */
+    .finish-button-container div.stButton > button {
+        margin-top: 30px !important;
+    }
+
     [data-testid="stColumn"] { min-height: 220px !important; display: flex; flex-direction: column; justify-content: flex-start; }
     .big-card { width: 100%; height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 20px; font-weight: bold; box-shadow: 0 6px 12px rgba(0,0,0,0.1); border: 4px solid; text-align: center; margin-bottom: 10px; transition: all 0.3s ease; }
     .card-closed { background: linear-gradient(135deg, #0077b6 0%, #00b4d8 100%); color: white; border-color: #023e8a; }
@@ -19,7 +36,6 @@ st.markdown("""
     .card-matched { background-color: #d1ffdb; color: #1b5e20; border-color: #4caf50; font-size: 28px; }
     .card-label { font-size: 12px; text-transform: uppercase; margin-top: 10px; font-weight: normal; opacity: 0.8; }
 
-    /* ΤΟ ΜΕΓΑΛΟ ΦΙΝΑΛΕ CSS */
     .finish-box {
         background-color: #e0f2fe;
         border: 6px solid #0077b6;
@@ -38,10 +54,8 @@ def format_time(seconds):
     mins, secs = divmod(int(seconds), 60)
     return f"{mins:02d}:{secs:02d}"
 
-if 'game_running' not in st.session_state:
-    st.session_state.game_running = False
-if 'show_finish' not in st.session_state:
-    st.session_state.show_finish = False
+if 'game_running' not in st.session_state: st.session_state.game_running = False
+if 'show_finish' not in st.session_state: st.session_state.show_finish = False
 
 # --- ΑΡΧΙΚΗ ΟΘΟΝΗ ---
 if not st.session_state.game_running and not st.session_state.show_finish:
@@ -74,7 +88,6 @@ elif st.session_state.game_running:
     c1, c2 = st.columns(2)
     c1.metric("⏱️ Χρόνος", format_time(elapsed))
     c2.metric("🔄 Προσπάθειες", st.session_state.attempts)
-    
     for row in range(3):
         cols = st.columns(4)
         for col in range(4):
@@ -89,31 +102,27 @@ elif st.session_state.game_running:
                 content = f'<div>{card["content"]}</div><div class="card-label">{label}</div>'
             else:
                 style, content = "card-closed", '<div class="brain-text">BRAIN<br>GAME</div>'
-            
             with cols[col]:
                 st.markdown(f'<div class="big-card {style}">{content}</div>', unsafe_allow_html=True)
                 lbl = "ΠΑΤΑ ΕΔΩ" if not (flipped or matched) else "---"
                 if st.button(lbl, key=f"b_{idx}", disabled=flipped or matched or len(st.session_state.flipped_indices) >= 2, use_container_width=True):
                     st.session_state.flipped_indices.append(idx)
                     st.rerun()
-
     if len(st.session_state.flipped_indices) == 2:
         st.session_state.attempts += 1
         i1, i2 = st.session_state.flipped_indices
         if st.session_state.deck[i1]['value'] == st.session_state.deck[i2]['value'] and st.session_state.deck[i1]['type'] != st.session_state.deck[i2]['type']:
             st.session_state.matched_indices.extend([i1, i2])
-        else:
-            time.sleep(1.2)
+        else: time.sleep(1.2)
         st.session_state.flipped_indices = []
         st.rerun()
-
     if len(st.session_state.matched_indices) == 12:
         st.session_state.finish_time = elapsed
         st.session_state.game_running = False
         st.session_state.show_finish = True
         st.rerun()
 
-# --- ΜΕΓΑΛΟ ΦΙΝΑΛΕ (ΞΕΧΩΡΙΣΤΗ ΣΕΛΙΔΑ) ---
+# --- ΜΕΓΑΛΟ ΦΙΝΑΛΕ ---
 elif st.session_state.show_finish:
     st.balloons()
     st.markdown(f"""
@@ -126,6 +135,9 @@ elif st.session_state.show_finish:
         </div>
     """, unsafe_allow_html=True)
     
+    # Χρήση container για το ξεκόλλημα του κουμπιού
+    st.markdown('<div class="finish-button-container">', unsafe_allow_html=True)
     if st.button("🔄 ΠΑΙΞΕ ΞΑΝΑ", type="primary", use_container_width=True):
         st.session_state.show_finish = False
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
