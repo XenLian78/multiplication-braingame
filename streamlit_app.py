@@ -4,26 +4,35 @@ import time
 
 st.set_page_config(page_title="Brain Game: Προπαίδεια", page_icon="🧠", layout="centered")
 
-# CSS ΓΙΑ ΜΕΓΙΣΤΗ ΑΞΙΟΠΟΙΗΣΗ ΥΨΟΥΣ
+# CSS ΓΙΑ ΜΕΓΙΣΤΗ ΑΞΙΟΠΟΙΗΣΗ ΥΨΟΥΣ & ΤΟ ΝΕΟ ΚΟΥΜΠΙ
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
     
-    /* Μηδενισμός κενών Streamlit στην κορυφή */
-    .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
+    .block-container { padding-top: 0.5rem !important; padding-bottom: 0rem !important; }
     [data-testid="stHeader"] { height: 0px !important; display: none !important; }
-    
     .stApp { background-color: #f0f7ff; }
     
-    /* Σύμπτυξη στατιστικών */
+    /* Σύμπτυξη στατιστικών και ευθυγράμμιση με το κουμπί Reset */
     [data-testid="stMetricContainer"] { 
         margin-top: -10px !important;
-        margin-bottom: -40px !important; 
+        margin-bottom: -35px !important; 
+    }
+
+    /* Στυλ για το κουμπί ΑΛΛΑΓΗ (Reset) */
+    .reset-btn div.stButton > button {
+        background-color: #ffb703 !important;
+        color: #023e8a !important;
+        height: 40px !important;
+        font-size: 14px !important;
+        margin-top: 5px !important;
+        border-radius: 10px !important;
+        border: 2px solid #fb8500 !important;
     }
     
-    /* Ανέβασμα του πλέγματος καρτών */
-    .main-game-container { margin-top: -20px !important; }
+    .main-game-container { margin-top: -15px !important; }
 
+    /* Κύρια κουμπιά (Ξεκινάμε / Παίξε ξανά) */
     div.stButton > button[kind="primary"] { 
         background-color: #0077b6 !important; 
         color: white !important; 
@@ -36,17 +45,16 @@ st.markdown("""
         border: none !important;
     }
 
-    [data-testid="stColumn"] { min-height: 180px !important; display: flex; flex-direction: column; justify-content: flex-start; }
+    [data-testid="stColumn"] { min-height: 175px !important; display: flex; flex-direction: column; justify-content: flex-start; }
     
-    /* Μικρότερο ύψος κάρτας για να χωράει παντού */
     .big-card { 
         width: 100%; 
-        height: 125px; 
+        height: 120px; 
         display: flex; 
         flex-direction: column; 
         align-items: center; 
         justify-content: center; 
-        border-radius: 20px; 
+        border-radius: 18px; 
         font-weight: bold; 
         box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
         border: 4px solid; 
@@ -55,7 +63,7 @@ st.markdown("""
     }
     
     .card-closed { background: linear-gradient(135deg, #0077b6 0%, #00b4d8 100%); color: white; border-color: #023e8a; }
-    .brain-text { font-family: 'Fredoka One', cursive; font-size: 20px; letter-spacing: 1px; text-shadow: 2px 2px #023e8a; }
+    .brain-text { font-family: 'Fredoka One', cursive; font-size: 19px; letter-spacing: 1px; text-shadow: 2px 2px #023e8a; }
     .card-question { background-color: white; color: #495057; border-color: #a2d2ff; font-size: 26px; }
     .card-answer { background-color: #e0f2fe; color: #0369a1; border-color: #0ea5e9; font-size: 30px; }
     .card-matched { background-color: #d1ffdb; color: #1b5e20; border-color: #4caf50; font-size: 26px; }
@@ -71,7 +79,6 @@ st.markdown("""
         color: #0077b6;
         font-family: 'Fredoka One', cursive;
     }
-    .finish-button-container div.stButton > button { margin-top: 20px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -105,11 +112,18 @@ if not st.session_state.game_running and not st.session_state.show_finish:
 
 # --- ΚΥΡΙΟ ΠΑΙΧΝΙΔΙ ---
 elif st.session_state.game_running:
-    # Εδώ ΔΕΝ βάζουμε τίτλο για να κερδίσουμε χώρο
     elapsed = time.time() - st.session_state.start_time
-    c1, c2 = st.columns(2)
-    c1.metric("⏱️ Χρόνος", format_time(elapsed))
-    c2.metric("🔄 Προσπάθειες", st.session_state.attempts)
+    
+    # Γραμμή Στατιστικών + Κουμπί Reset
+    stat_col1, stat_col2, stat_col3 = st.columns([1, 1, 1])
+    stat_col1.metric("⏱️ Χρόνος", format_time(elapsed))
+    stat_col2.metric("🔄 Προσπάθειες", st.session_state.attempts)
+    with stat_col3:
+        st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
+        if st.button("🔄 ΑΛΛΑΓΗ"):
+            st.session_state.game_running = False
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="main-game-container">', unsafe_allow_html=True)
     for row in range(3):
@@ -160,9 +174,8 @@ elif st.session_state.show_finish:
             <p style='font-size: 25px;'>🔄 Προσπάθειες: {st.session_state.attempts}</p>
         </div>
     """, unsafe_allow_html=True)
-    st.markdown('<div class="finish-button-container">', unsafe_allow_html=True)
+    st.markdown('<div class="finish-button-container" style="margin-top:20px;">', unsafe_allow_html=True)
     if st.button("🔄 ΠΑΙΞΕ ΞΑΝΑ", type="primary", use_container_width=True):
         st.session_state.show_finish = False
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
-
