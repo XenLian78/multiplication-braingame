@@ -20,4 +20,4 @@
 * Custom CSS3 Animations & Grid Layout
 
 ## 🚀 Live Demo
-Δείτε την εφαρμογή ζωντανά εδώ: [ΕΔΩ ΒΑΛΕ ΤΟ LINK ΑΠΟ ΤΟ STREAMLIT CLOUD]
+Δείτε την εφαρμογή ζωντανά εδώ: [(https://multiplication-braingame-ng2fzaexgvf5vgyj49wemn.streamlit.app/)]
