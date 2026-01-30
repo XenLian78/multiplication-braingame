@@ -5,50 +5,37 @@ import time
 # 1. Ρύθμιση σελίδας
 st.set_page_config(page_title="Multiplication Brain Game", page_icon="🧠", layout="centered")
 
-# 2. CSS για το Flip Effect και το στυλ των καρτών
+# 2. CSS για Επαγγελματική Εμφάνιση Καρτών και Κουμπιών
 st.markdown("""
 <style>
     .stApp { background-color: #f0f7ff; }
     
-    /* Στυλ για το μεγάλο μπλε κουμπί ΞΕΚΙΝΑΜΕ */
+    /* Στυλ για το κουμπί ΞΕΚΙΝΑΜΕ (Μπλε και Μεγάλο) */
     div.stButton > button[kind="primary"] {
         background-color: #0077b6 !important;
         color: white !important;
-        width: 100% !important;
         height: 60px !important;
         font-size: 24px !important;
         border-radius: 15px !important;
-        border: none !important;
         font-weight: bold !important;
     }
 
-    /* Στυλ για τις κάρτες-κουμπιά */
-    .card-box {
-        width: 100%;
-        aspect-ratio: 1 / 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 15px;
-        font-weight: bold;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        border: 3px solid;
-        text-align: center;
-        transition: transform 0.3s;
-    }
-
-    .card-back { background-color: #ced4da; color: #495057; border-color: #adb5bd; font-size: 35px; }
-    .white-card { background-color: white; color: #495057; border-color: #a2d2ff; font-size: 20px; }
-    .blue-card { background-color: #e0f2fe; color: #0369a1; border-color: #0ea5e9; font-size: 24px; }
-    .matched-card { background-color: #d1ffdb !important; border-color: #4caf50 !important; color: #1b5e20 !important; }
-
-    /* Αφαίρεση του προεπιλεγμένου στυλ των κουμπιών του Streamlit για τις κάρτες */
-    div[data-testid="stColumn"] button {
+    /* Στυλ για τις Κάρτες του Παιχνιδιού */
+    /* Κάνουμε τα κουμπιά να μοιάζουν με μεγάλες τετράγωνες κάρτες */
+    div.stButton > button:not([kind="primary"]) {
+        width: 100% !important;
+        aspect-ratio: 1 / 1 !important;
         height: auto !important;
-        padding: 0 !important;
-        border: none !important;
-        background: none !important;
+        border-radius: 15px !important;
+        border: 3px solid #adb5bd !important;
+        background-color: #ced4da !important; /* Κλειστή κάρτα */
+        color: #495057 !important;
+        font-size: 30px !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease;
     }
+
+    /* Όταν η κάρτα είναι ανοιχτή (λευκή ή γαλάζια) θα αλλάζουμε το στυλ μέσω κώδικα */
 </style>
 """, unsafe_allow_html=True)
 
@@ -69,9 +56,8 @@ if not st.session_state.game_running:
     
     st.write("")
     if not selected:
-        st.info("ℹ️ Επίλεξε τουλάχιστον έναν αριθμό για να ξεκινήσεις!")
+        st.info("ℹ️ Επίλεξε αριθμούς για να ξεκινήσεις!")
     else:
-        # Μεγάλο Μπλε Κουμπί
         if st.button("🚀 ΞΕΚΙΝΑΜΕ!", type="primary", use_container_width=True):
             all_pairs = []
             for n in selected:
@@ -114,20 +100,18 @@ else:
             is_matched = idx in st.session_state.matched_indices
             is_flipped = idx in st.session_state.flipped_indices or is_matched
             
-            # Δημιουργία του HTML περιεχομένου της κάρτας
+            # Περιεχόμενο κάρτας
             if is_matched:
-                style, content = "matched-card", "✅"
+                label, icon = "✅", ""
             elif is_flipped:
-                style = "white-card" if card['type'] == 'q' else "blue-card"
-                content = card['content']
+                label = card['content']
+                icon = "📝" if card['type'] == 'q' else "🎯"
             else:
-                style, content = "card-back", "❓"
+                label, icon = "❓", ""
 
-            card_html = f'<div class="card-box {style}">{content}</div>'
-            
             with cols[col]:
-                # Χρήση του HTML ως label του κουμπιού
-                if st.button(card_html, key=f"btn_{idx}", disabled=is_flipped or len(st.session_state.flipped_indices) >= 2, help=None):
+                # Χρησιμοποιούμε κανονικό κουμπί χωρίς HTML μέσα στο label
+                if st.button(f"{label}\n{icon}", key=f"btn_{idx}", disabled=is_flipped or len(st.session_state.flipped_indices) >= 2):
                     st.session_state.flipped_indices.append(idx)
                     st.rerun()
 
@@ -147,7 +131,7 @@ else:
     if len(st.session_state.matched_indices) == 12:
         st.session_state.finish_time = elapsed
         st.balloons()
-        st.success(f"🎉 Μπράβο! Χρόνος: {format_time(elapsed)} | Προσπάθειες: {st.session_state.attempts}")
-        if st.button("🔄 Νέο Παιχνίδι", type="primary", use_container_width=True):
+        st.success(f"🎉 Μπράβο! Το ολοκλήρωσες σε {format_time(elapsed)}!")
+        if st.button("🔄 Παίξε Ξανά", type="primary", use_container_width=True):
             st.session_state.game_running = False
             st.rerun()
