@@ -130,11 +130,11 @@ else:
         # Πλέγμα Καρτών
     for row in range(3):
         cols = st.columns(4)
-            for col in range(4):
-                idx = row * 4 + col
-                card = st.session_state.deck[idx]
-                is_matched = idx in st.session_state.matched_indices
-                is_flipped = idx in st.session_state.flipped_indices or is_matched
+    for col in range(4):
+        idx = row * 4 + col
+        card = st.session_state.deck[idx]
+        is_matched = idx in st.session_state.matched_indices
+        is_flipped = idx in st.session_state.flipped_indices or is_matched
                 
                 if is_matched:
                     style, content, label = "card-matched", card['content'], "ΣΩΣΤΟ! ✅"
