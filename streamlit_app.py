@@ -324,16 +324,14 @@ else:
 
 
 
-   # --- ΦΙΝΑΛΕ ---
-    if len(st.session_state.matched_indices) == 12:
+   # Φινάλε με το μεγάλο γαλάζιο πλαίσιο
+    else:
         st.session_state.finish_time = elapsed
         st.balloons()
-        
-        # Το εντυπωσιακό γαλάζιο πλαίσιο
         st.markdown(f"""
             <div class="finish-box">
-                <h1 style='font-size: 50px; margin-bottom: 0px;'>🎉 Μπράβο!</h1>
-                <h2 style='font-size: 35px; margin-top: 0px;'>Τα κατάφερες.</h2>
+                <h1 style='font-size: 50px;'>🎉 Μπράβο!</h1>
+                <h2 style='font-size: 35px;'>Τα κατάφερες.</h2>
                 <hr style='border: 1px solid #0077b6; opacity: 0.2; margin: 20px 0;'>
                 <p style='font-size: 35px;'>⏱️ Χρόνος: {format_time(elapsed)}</p>
             </div>
@@ -342,4 +340,3 @@ else:
         if st.button("🔄 ΠΑΙΞΕ ΞΑΝΑ", type="primary", use_container_width=True):
             st.session_state.game_running = False
             st.rerun()
-
