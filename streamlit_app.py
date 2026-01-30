@@ -46,7 +46,7 @@ if not st.session_state.game_running and not st.session_state.show_finish:
 # --- ΚΕΝΤΡΙΚΟ ΠΑΙΧΝΙΔΙ ---
 elif st.session_state.game_running:
     if st.session_state.memory_mode:
-        time_left = 20 - int(time.time() - st.session_state.memory_start)
+        time_left = 15 - int(time.time() - st.session_state.memory_start)
         if time_left <= 0:
             st.session_state.memory_mode = False
             st.session_state.start_time = time.time()
