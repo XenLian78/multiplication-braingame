@@ -3,39 +3,46 @@ import random
 import time
 
 # 1. Ρύθμιση σελίδας
-st.set_page_config(page_title="Multiplication Brain Game", page_icon="🧠", layout="centered")
+st.set_page_config(page_title="Multiplication Memory Game", page_icon="🧠", layout="centered")
 
-# 2. CSS για Επαγγελματική Εμφάνιση Καρτών και Κουμπιών
+# 2. CSS για Μεγάλες Κάρτες και Καθαρό UI
 st.markdown("""
 <style>
     .stApp { background-color: #f0f7ff; }
     
-    /* Στυλ για το κουμπί ΞΕΚΙΝΑΜΕ (Μπλε και Μεγάλο) */
+    /* Στυλ Κάρτας */
+    .big-card {
+        width: 100%;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 15px;
+        font-weight: bold;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border: 3px solid;
+        text-align: center;
+        margin-bottom: 5px;
+        font-size: 22px;
+    }
+
+    /* Χρώματα Καρτών */
+    .card-closed { background-color: #ced4da; color: #495057; border-color: #adb5bd; font-size: 35px; }
+    .card-question { background-color: white; color: #495057; border-color: #a2d2ff; }
+    .card-answer { background-color: #e0f2fe; color: #0369a1; border-color: #0ea5e9; }
+    .card-matched { background-color: #d1ffdb; color: #1b5e20; border-color: #4caf50; }
+
+    /* Ταμπέλα τύπου κάρτας (Πράξη/Αποτέλεσμα) */
+    .card-hint { font-size: 10px; text-transform: uppercase; margin-top: 5px; font-weight: normal; }
+
+    /* Μεγάλο Μπλε Κουμπί ΞΕΚΙΝΑΜΕ */
     div.stButton > button[kind="primary"] {
         background-color: #0077b6 !important;
         color: white !important;
         height: 60px !important;
         font-size: 24px !important;
         border-radius: 15px !important;
-        font-weight: bold !important;
     }
-
-    /* Στυλ για τις Κάρτες του Παιχνιδιού */
-    /* Κάνουμε τα κουμπιά να μοιάζουν με μεγάλες τετράγωνες κάρτες */
-    div.stButton > button:not([kind="primary"]) {
-        width: 100% !important;
-        aspect-ratio: 1 / 1 !important;
-        height: auto !important;
-        border-radius: 15px !important;
-        border: 3px solid #adb5bd !important;
-        background-color: #ced4da !important; /* Κλειστή κάρτα */
-        color: #495057 !important;
-        font-size: 30px !important;
-        font-weight: bold !important;
-        transition: all 0.3s ease;
-    }
-
-    /* Όταν η κάρτα είναι ανοιχτή (λευκή ή γαλάζια) θα αλλάζουμε το στυλ μέσω κώδικα */
 </style>
 """, unsafe_allow_html=True)
 
@@ -48,13 +55,13 @@ if 'game_running' not in st.session_state:
 
 # --- ΑΡΧΙΚΗ ΟΘΟΝΗ ---
 if not st.session_state.game_running:
-    st.title("🧮 Multiplication Brain Game")
+    st.title("🧮 Το Παιχνίδι της Προπαίδειας")
     st.subheader("Ποιους αριθμούς θα μάθουμε σήμερα;")
     
     cols = st.columns(5)
     selected = [i for i in range(1, 11) if cols[(i-1)%5].checkbox(str(i), key=f"sel_{i}")]
     
-    st.write("")
+    st.divider()
     if not selected:
         st.info("ℹ️ Επίλεξε αριθμούς για να ξεκινήσεις!")
     else:
@@ -84,7 +91,6 @@ if not st.session_state.game_running:
 else:
     elapsed = time.time() - st.session_state.start_time if not st.session_state.finish_time else st.session_state.finish_time
     
-    # Progress Bar
     st.progress(len(st.session_state.matched_indices) / 12)
     
     c1, c2 = st.columns(2)
@@ -100,18 +106,31 @@ else:
             is_matched = idx in st.session_state.matched_indices
             is_flipped = idx in st.session_state.flipped_indices or is_matched
             
-            # Περιεχόμενο κάρτας
+            # Επιλογή στυλ κάρτας
             if is_matched:
-                label, icon = "✅", ""
+                style, content, hint = "card-matched", "✅", "ΣΩΣΤΟ!"
             elif is_flipped:
-                label = card['content']
-                icon = "📝" if card['type'] == 'q' else "🎯"
+                if card['type'] == 'q':
+                    style, content, hint = "card-question", card['content'], "ΠΡΑΞΗ 📝"
+                else:
+                    style, content, hint = "card-answer", card['content'], "ΑΠΟΤΕΛΕΣΜΑ 🎯"
             else:
-                label, icon = "❓", ""
+                style, content, hint = "card-closed", "❓", ""
 
             with cols[col]:
-                # Χρησιμοποιούμε κανονικό κουμπί χωρίς HTML μέσα στο label
-                if st.button(f"{label}\n{icon}", key=f"btn_{idx}", disabled=is_flipped or len(st.session_state.flipped_indices) >= 2):
+                # Εμφάνιση Κάρτας
+                st.markdown(f"""
+                <div class="big-card {style}">
+                    <div>
+                        {content}
+                        <div class="card-hint">{hint}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Κουμπί ελέγχου κάτω από την κάρτα
+                button_disabled = is_flipped or len(st.session_state.flipped_indices) >= 2
+                if st.button("ΠΑΤΑ ΕΔΩ", key=f"btn_{idx}", disabled=button_disabled, use_container_width=True):
                     st.session_state.flipped_indices.append(idx)
                     st.rerun()
 
@@ -124,7 +143,7 @@ else:
             st.session_state.flipped_indices = []
             st.rerun()
         else:
-            time.sleep(0.8)
+            time.sleep(1.2) # Χρόνος για να προλάβουν να δουν την κάρτα
             st.session_state.flipped_indices = []
             st.rerun()
 
