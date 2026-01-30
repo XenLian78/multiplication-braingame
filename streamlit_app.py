@@ -88,7 +88,7 @@ if 'game_running' not in st.session_state:
 
 # --- ΑΡΧΙΚΗ ΟΘΟΝΗ ---
 if not st.session_state.game_running:
-    st.markdown("<h1 style='text-align: center; color: #0077b6; font-family: Fredoka One;'>BRAIN GAME</h1>", unsafe_allow_html=True)
+    st.title("🧠 Brain Game: Προπαίδεια")
     st.subheader("Ποιους αριθμούς θα μάθουμε σήμερα;")
     
     cols = st.columns(5)
