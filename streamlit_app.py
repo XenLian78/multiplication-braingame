@@ -5,23 +5,16 @@ import time
 # 1. Ρύθμιση σελίδας
 st.set_page_config(page_title="Multiplication Brain Game", page_icon="🧠", layout="centered")
 
-# 2. CSS για 4x3 Grid, Touch-friendly κάρτες και UI
+# 2. CSS για 4x3 Grid και σωστά Clickable Cards
 st.markdown("""
 <style>
     .stApp { background-color: #f0f7ff; }
-    
-    /* 4 Στήλες για το Grid */
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-        margin-bottom: 20px;
-    }
     
     .main-card {
         aspect-ratio: 1 / 1;
         perspective: 1000px;
         position: relative;
+        margin-bottom: 10px;
     }
 
     .card-inner {
@@ -29,7 +22,7 @@ st.markdown("""
         width: 100%;
         height: 100%;
         text-align: center;
-        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.6s;
         transform-style: preserve-3d;
     }
 
@@ -50,47 +43,36 @@ st.markdown("""
         border: 3px solid;
     }
 
-    /* Πίσω πλευρά (Κλειστή κάρτα) */
-    .card-back {
-        background-color: #ced4da;
-        color: #495057;
-        border-color: #adb5bd;
-        font-size: 40px;
-    }
-
-    /* Μπροστινή πλευρά (Ανοιχτή κάρτα) */
+    .card-back { background-color: #ced4da; color: #495057; border-color: #adb5bd; font-size: 40px; }
     .white-card { background-color: white; color: #495057; border-color: #a2d2ff; font-size: 22px; }
     .blue-card { background-color: #e0f2fe; color: #0369a1; border-color: #0ea5e9; font-size: 26px; }
     .matched-card { background-color: #d1ffdb !important; border-color: #4caf50 !important; color: #1b5e20 !important; }
 
     .hint-label { font-size: 10px; text-transform: uppercase; margin-top: 4px; opacity: 0.7; }
 
-    /* Αόρατο κουμπί που καλύπτει όλη την κάρτα για Touch */
+    /* Διόρθωση για το κουμπί: Το κάνουμε να καλύπτει ΟΛΟ το χώρο της κάρτας */
     .stButton > button {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: transparent !important;
-        border: none !important;
-        color: transparent !important;
-        z-index: 10;
-        cursor: pointer;
+        height: 100% !important;
+        width: 100% !important;
+        position: absolute !important;
+        top: 0; left: 0;
+        opacity: 0 !important; /* Αόρατο αλλά clickable */
+        z-index: 100;
     }
     
-    /* Στυλ για το κουμπί ΞΕΚΙΝΑΜΕ (ίδιο με το προηγούμενο app) */
-    .start-btn-style {
+    /* Στυλ για το κουμπί ΞΕΚΙΝΑΜΕ */
+    .stButton.start-btn > button {
+        opacity: 1 !important;
         background-color: #0077b6 !important;
         color: white !important;
-        font-weight: bold !important;
-        border-radius: 15px !important;
-        padding: 15px !important;
+        position: relative !important;
+        height: auto !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Helper Functions
 def format_time(seconds):
-    mins = int(seconds // 60)
-    secs = int(seconds % 60)
+    mins, secs = divmod(int(seconds), 60)
     return f"{mins:02d}:{secs:02d}"
 
 def init_game(selected_numbers):
@@ -102,8 +84,8 @@ def init_game(selected_numbers):
     selected_pairs = random.sample(all_pairs, 6)
     deck = []
     for pair in selected_pairs:
-        deck.append({'content': pair[0], 'value': pair[1], 'type': 'q'}) # Λευκή
-        deck.append({'content': str(pair[1]), 'value': pair[1], 'type': 'a'}) # Γαλάζια
+        deck.append({'content': pair[0], 'value': pair[1], 'type': 'q'})
+        deck.append({'content': str(pair[1]), 'value': pair[1], 'type': 'a'})
     
     random.shuffle(deck)
     st.session_state.deck = deck
@@ -114,9 +96,7 @@ def init_game(selected_numbers):
     st.session_state.start_time = time.time()
     st.session_state.finish_time = None
 
-# 4. Logic & Session State
-if 'deck' not in st.session_state:
-    st.session_state.deck = []
+if 'game_running' not in st.session_state:
     st.session_state.game_running = False
 
 # --- ΑΡΧΙΚΗ ΟΘΟΝΗ ---
@@ -127,20 +107,22 @@ if not st.session_state.game_running:
     cols = st.columns(5)
     selected = [i for i in range(1, 11) if cols[(i-1)%5].checkbox(str(i), key=f"sel_{i}")]
     
+    st.write("") # Κενό
     if not selected:
         st.info("ℹ️ Επίλεξε αριθμούς για να ξεκινήσεις!")
     else:
+        # Το κουμπί ΞΕΚΙΝΑΜΕ σε ειδικό container για να μην είναι αόρατο
+        st.markdown('<div class="start-btn">', unsafe_allow_html=True)
         if st.button("🚀 ΞΕΚΙΝΑΜΕ!", use_container_width=True, type="primary"):
             init_game(selected)
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # --- ΚΥΡΙΟ ΠΑΙΧΝΙΔΙ ---
 else:
-    elapsed = int(time.time() - st.session_state.start_time) if not st.session_state.finish_time else st.session_state.finish_time
+    elapsed = time.time() - st.session_state.start_time if not st.session_state.finish_time else st.session_state.finish_time
     
-    # Progress Bar & Stats
-    progress = len(st.session_state.matched_indices) / 12
-    st.progress(progress)
+    st.progress(len(st.session_state.matched_indices) / 12)
     
     c1, c2 = st.columns(2)
     c1.metric("⏱️ Χρόνος", format_time(elapsed))
@@ -160,29 +142,29 @@ else:
             if is_matched:
                 card_class, content, label = "matched-card", "✅", "ΒΡΕΘΗΚΕ"
             elif is_flipped:
-                if card['type'] == 'q':
-                    card_class, label = "white-card", "ΠΡΑΞΗ 📝"
-                else:
-                    card_class, label = "blue-card", "ΑΠΟΤΕΛΕΣΜΑ 🎯"
+                card_class = "white-card" if card['type'] == 'q' else "blue-card"
+                label = "ΠΡΑΞΗ 📝" if card['type'] == 'q' else "ΑΠΟΤΕΛΕΣΜΑ 🎯"
                 content = card['content']
             else:
                 card_class, content, label = "card-back", "❓", ""
 
-            card_html = f"""
-            <div class="main-card">
-                <div class="card-inner {flipped_class}">
-                    <div class="card-back">❓</div>
-                    <div class="card-front {card_class}">
-                        <div>{content}</div>
-                        <div class="hint-label">{label}</div>
+            with cols[col]:
+                # Το HTML της κάρτας
+                st.markdown(f"""
+                <div class="main-card">
+                    <div class="card-inner {flipped_class}">
+                        <div class="card-back">❓</div>
+                        <div class="card-front {card_class}">
+                            <div>{content}</div>
+                            <div class="hint-label">{label}</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            """
-            with cols[col]:
-                st.markdown(card_html, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+                
+                # Το κουμπί από πάνω
                 if not is_flipped and len(st.session_state.flipped_indices) < 2:
-                    if st.button("", key=f"card_{idx}"):
+                    if st.button("", key=f"btn_{idx}"):
                         st.session_state.flipped_indices.append(idx)
                         st.rerun()
 
@@ -202,7 +184,7 @@ else:
     if len(st.session_state.matched_indices) == 12:
         st.session_state.finish_time = elapsed
         st.balloons()
-        st.success(f"🎉 Μπράβο! Το ολοκλήρωσες σε {format_time(elapsed)} με {st.session_state.attempts} προσπάθειες!")
+        st.success(f"🎉 Μπράβο! Χρόνος: {format_time(elapsed)} | Προσπάθειες: {st.session_state.attempts}")
         if st.button("🔄 Παίξε Ξανά", use_container_width=True):
             st.session_state.game_running = False
             st.rerun()
