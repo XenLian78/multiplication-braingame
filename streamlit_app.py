@@ -123,10 +123,9 @@ if not st.session_state.game_running:
 else:
     elapsed = time.time() - st.session_state.start_time if not st.session_state.finish_time else st.session_state.finish_time
     
-    if len(st.session_state.matched_indices) < 12:
-        c1, c2 = st.columns(2)
-        c1.metric("⏱️ Χρόνος", format_time(elapsed))
-        c2.metric("🔄 Προσπάθειες", st.session_state.attempts)
+    c1, c2 = st.columns(2)
+    c1.metric("⏱️ Χρόνος", format_time(elapsed))
+    c2.metric("🔄 Προσπάθειες", st.session_state.attempts)
 
         # Πλέγμα Καρτών
         for row in range(3):
