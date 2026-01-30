@@ -10,6 +10,10 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
     .stApp { background-color: #f0f7ff; }
     
+    /* Ρύθμιση αποστάσεων για να ανέβουν οι κάρτες */
+    [data-testid="stMetricContainer"] { margin-bottom: -20px !important; }
+    .main-game-container { margin-top: -30px !important; }
+
     div.stButton > button[kind="primary"] { 
         background-color: #0077b6 !important; 
         color: white !important; 
@@ -17,24 +21,23 @@ st.markdown("""
         font-size: 26px !important; 
         border-radius: 15px !important; 
         font-weight: bold !important;
-        outline: none !important; /* Αφαίρεση περιγράμματος */
-        box-shadow: none !important; /* Αφαίρεση σκιάς που μπορεί να μοιάζει με περίγραμμα */
+        outline: none !important;
+        box-shadow: none !important;
         border: none !important;
     }
 
-    /* Ξεκόλλημα του κουμπιού ΠΑΙΞΕ ΞΑΝΑ στο φινάλε */
     .finish-button-container div.stButton > button {
         margin-top: 30px !important;
     }
 
-    [data-testid="stColumn"] { min-height: 220px !important; display: flex; flex-direction: column; justify-content: flex-start; }
-    .big-card { width: 100%; height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 20px; font-weight: bold; box-shadow: 0 6px 12px rgba(0,0,0,0.1); border: 4px solid; text-align: center; margin-bottom: 10px; transition: all 0.3s ease; }
+    [data-testid="stColumn"] { min-height: 200px !important; display: flex; flex-direction: column; justify-content: flex-start; }
+    .big-card { width: 100%; height: 135px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 20px; font-weight: bold; box-shadow: 0 6px 12px rgba(0,0,0,0.1); border: 4px solid; text-align: center; margin-bottom: 5px; transition: all 0.3s ease; }
     .card-closed { background: linear-gradient(135deg, #0077b6 0%, #00b4d8 100%); color: white; border-color: #023e8a; }
     .brain-text { font-family: 'Fredoka One', cursive; font-size: 22px; letter-spacing: 2px; text-shadow: 2px 2px #023e8a; }
     .card-question { background-color: white; color: #495057; border-color: #a2d2ff; font-size: 28px; }
     .card-answer { background-color: #e0f2fe; color: #0369a1; border-color: #0ea5e9; font-size: 32px; }
     .card-matched { background-color: #d1ffdb; color: #1b5e20; border-color: #4caf50; font-size: 28px; }
-    .card-label { font-size: 12px; text-transform: uppercase; margin-top: 10px; font-weight: normal; opacity: 0.8; }
+    .card-label { font-size: 11px; text-transform: uppercase; margin-top: 5px; font-weight: normal; opacity: 0.8; }
 
     .finish-box {
         background-color: #e0f2fe;
@@ -75,11 +78,7 @@ if not st.session_state.game_running and not st.session_state.show_finish:
             deck.append({'content': p[0], 'value': p[1], 'type': 'q'})
             deck.append({'content': str(p[1]), 'value': p[1], 'type': 'a'})
         random.shuffle(deck)
-        st.session_state.update({
-            'deck': deck, 'matched_indices': [], 'flipped_indices': [], 
-            'attempts': 0, 'start_time': time.time(), 'finish_time': None, 
-            'game_running': True, 'show_finish': False
-        })
+        st.session_state.update({'deck': deck, 'matched_indices': [], 'flipped_indices': [], 'attempts': 0, 'start_time': time.time(), 'finish_time': None, 'game_running': True, 'show_finish': False})
         st.rerun()
 
 # --- ΚΥΡΙΟ ΠΑΙΧΝΙΔΙ ---
@@ -88,6 +87,8 @@ elif st.session_state.game_running:
     c1, c2 = st.columns(2)
     c1.metric("⏱️ Χρόνος", format_time(elapsed))
     c2.metric("🔄 Προσπάθειες", st.session_state.attempts)
+    
+    st.markdown('<div class="main-game-container">', unsafe_allow_html=True)
     for row in range(3):
         cols = st.columns(4)
         for col in range(4):
@@ -104,10 +105,12 @@ elif st.session_state.game_running:
                 style, content = "card-closed", '<div class="brain-text">BRAIN<br>GAME</div>'
             with cols[col]:
                 st.markdown(f'<div class="big-card {style}">{content}</div>', unsafe_allow_html=True)
-                lbl = "ΠΑΤΑ ΕΔΩ" if not (flipped or matched) else "---"
+                lbl = "ΚΛΙΚ" if not (flipped or matched) else "---"
                 if st.button(lbl, key=f"b_{idx}", disabled=flipped or matched or len(st.session_state.flipped_indices) >= 2, use_container_width=True):
                     st.session_state.flipped_indices.append(idx)
                     st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
     if len(st.session_state.flipped_indices) == 2:
         st.session_state.attempts += 1
         i1, i2 = st.session_state.flipped_indices
@@ -134,8 +137,6 @@ elif st.session_state.show_finish:
             <p style='font-size: 25px;'>🔄 Προσπάθειες: {st.session_state.attempts}</p>
         </div>
     """, unsafe_allow_html=True)
-    
-    # Χρήση container για το ξεκόλλημα του κουμπιού
     st.markdown('<div class="finish-button-container">', unsafe_allow_html=True)
     if st.button("🔄 ΠΑΙΞΕ ΞΑΝΑ", type="primary", use_container_width=True):
         st.session_state.show_finish = False
