@@ -18,6 +18,3 @@
 * Python 3.x
 * Streamlit Framework
 * Custom CSS3 Animations & Grid Layout
-
-## 🚀 Live Demo
-Δείτε την εφαρμογή ζωντανά εδώ: [(https://multiplication-braingame-ng2fzaexgvf5vgyj49wemn.streamlit.app/)]
