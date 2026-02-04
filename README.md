@@ -25,3 +25,7 @@
 
 ## 🔎 PREVIEW
 Δείτε το παιχνίδι εδω [https://xenlian78.github.io/multiplication-braingame/]
+
+Σκανάρετε το QR για γρηγορότερη πρόσβαση  <<img width="484" height="482" alt="image" src="https://github.com/user-attachments/assets/153c6215-e54e-47d7-8de7-a2c52e6bb007" />
+>
+
