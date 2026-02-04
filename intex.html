@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Brain Game: Προπαίδεια</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
+        
+        :root {
+            --primary: #37c8abff;
+            --secondary: #f5a1c4ff;
+            --accent: #f2d25bff;
+            --matched-bg: #a9f3e6ff;
+            --text-dark: #000000;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f8f9fa; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .hidden { display: none !important; }
+        
+        .container { background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 650px; text-align: center; }
+        
+        h1 { color: var(--primary); font-family: 'Fredoka One', cursive; margin-bottom: 20px; }
+        .checkbox-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 25px; }
+        
+        .check-item { background: #f0f4f8; padding: 15px; border-radius: 12px; cursor: pointer; border: 2px solid transparent; font-weight: bold; transition: 0.2s; font-size: 18px; }
+        .check-item.selected { border-color: var(--primary); background: var(--primary); color: white; }
+
+        .btn-blue { background-color: var(--primary); color: white; border: none; padding: 18px; font-size: 20px; border-radius: 15px; cursor: pointer; font-weight: bold; width: 100%; font-family: 'Fredoka One', cursive; transition: 0.3s; }
+        .btn-blue:hover { opacity: 0.9; transform: scale(1.02); }
+        
+        .change-btn { background: var(--accent); color: white; border: none; padding: 10px 15px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px; }
+
+        .stats-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 25px; align-items: center; }
+        .stat-box { background: #ffffff; padding: 10px; border-radius: 12px; border: 1px solid #eee; }
+        .stat-label { font-size: 11px; color: var(--primary); text-transform: uppercase; margin-bottom: 3px; font-weight: bold; }
+        .stat-value { font-size: 18px; font-weight: bold; color: var(--primary); }
+
+        .countdown-overlay { font-family: 'Fredoka One', cursive; font-size: 24px; color: var(--primary); margin-bottom: 20px; }
+
+        /* --- CARD DESIGN --- */
+        .game-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; perspective: 1000px; }
+        .card-slot { height: 120px; width: 100%; position: relative; cursor: pointer; }
+        .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); transform-style: preserve-3d; }
+        .card-slot.is-flipped .card-inner { transform: rotateY(180deg); }
+
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 15px; border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+        /* ΚΛΕΙΣΤΗ ΚΑΡΤΑ */
+        .card-front { background: white; }
+        .card-front svg { width: 80%; height: 80%; }
+
+        /* ΑΝΟΙΧΤΗ ΚΑΡΤΑ */
+        .card-back { transform: rotateY(180deg); background: white; font-size: 22px; font-weight: bold; color: var(--text-dark); }
+        .card-back.is-answer { background: var(--secondary); }
+        .card-back.matched { background: var(--matched-bg) !important; border-color: var(--primary) !important; color: var(--primary) !important; }
+
+        .trophy { font-size: 80px; display: block; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div id="setup" class="container">
+    <h1>Brain Game</h1>
+    <p style="color:#666">Επίλεξε τους αριθμούς για την προπαίδεια:</p>
+    <div class="checkbox-grid" id="numbersGrid"></div>
+    <button class="btn-blue" onclick="startGame()">🚀 ΞΕΚΙΝΑΜΕ!</button>
+</div>
+
+<div id="game" class="container hidden">
+    <div id="countdown" class="countdown-overlay"></div>
+    <div id="stats" class="stats-bar hidden">
+        <div class="stat-box"><div class="stat-label">Χρόνος</div><div id="timeVal" class="stat-value">00:00</div></div>
+        <div class="stat-box"><div class="stat-label">Προσπάθειες</div><div id="attemptVal" class="stat-value">0</div></div>
+        <button class="change-btn" onclick="resetToStart()">🔄 ΑΛΛΑΓΗ</button>
+    </div>
+    <div class="game-grid" id="cardGrid"></div>
+</div>
+
+<div id="finish" class="container hidden">
+    <span class="trophy">🏆</span>
+    <h2 style="font-family:'Fredoka One'; color:var(--primary); font-size:32px">Συγχαρητήρια!<br>Τα κατάφερες!</h2>
+    <div style="margin: 25px 0; font-size: 18px; color: var(--primary);">
+        <p>Χρόνος: <b id="finalTime"></b></p>
+        <p>Προσπάθειες: <b id="finalAttempts"></b></p>
+    </div>
+    <button class="btn-blue" onclick="resetToStart()">🔄 ΠΑΙΞΕ ΞΑΝΑ</button>
+</div>
+
+<script>
+    let selectedNumbers = [], deck = [], flipped = [], matched = [], attempts = 0;
+    let startTime, timerInterval, memoryMode = true;
+
+    // Το SVG σου
+    const brainSvg = `<svg version="1.1" viewBox="0 0 195.84 195.84" xmlns="http://www.w3.org/2000/svg"><g transform="matrix(1.2322814,0,0,1.2322814,-25.16441,-6.7696556)"><circle style="fill:#a9f3e6" cx="63.9" cy="63" r="9.5"/><circle style="fill:#a9f3e6" cx="61.1" cy="91" r="9.5"/><circle style="fill:#a9f3e6" cx="49.6" cy="105.9" r="4.8"/><circle style="fill:#37c8ab" cx="53.8" cy="77.8" r="4.8"/><circle style="fill:#a9f3e6" cx="81.8" cy="54.8" r="4.8"/><circle style="fill:#a9f3e6" cx="91.8" cy="63.8" r="4.8"/><circle style="fill:#a9f3e6" cx="80.8" cy="65.8" r="4.8"/><circle style="fill:#37c8ab" cx="91.8" cy="120.8" r="4.8"/><circle style="fill:#a9f3e6" cx="60.8" cy="108.8" r="4.8"/><circle style="fill:#f5a1c4" cx="134.8" cy="75.8" r="4.8"/><circle style="fill:#f2d25b" cx="107.8" cy="59" r="4.8"/><circle style="fill:#f2d25b" cx="101.8" cy="116.8" r="4.8"/><circle style="fill:#f5a1c4" cx="114.8" cy="117.8" r="4.8"/><circle style="fill:#f2d25b" cx="128.8" cy="131.8" r="4.8"/><circle style="fill:#a9f3e6" cx="80.6" cy="109.3" r="9.5"/><circle style="fill:#a9f3e6" cx="84" cy="135" r="9.5"/><circle style="fill:#37c8ab" cx="61.1" cy="125.5" r="9.5"/><circle style="fill:#f3605b" cx="112.1" cy="133.8" r="9.5"/><circle style="fill:#f5a1c4" cx="134.2" cy="114.8" r="9.5"/><circle style="fill:#f5a1c4" cx="110.5" cy="100.5" r="9.5"/><circle style="fill:#f2d25b" cx="134.5" cy="91.5" r="9.5"/><circle style="fill:#f5a1c4" cx="109.5" cy="75.5" r="9.5"/><circle style="fill:#f3605b" cx="128.5" cy="60.8" r="9.5"/><path d="M76.1 145.1c-2.5-.4-5.5-1.9-7.2-3.6-1.7-1.7-3.4-5.1-4-8l-.4-1.9-2.3-.1c-5.7-.1-9.4-3.2-10.6-9.1-.7-3.5.1-6.9 2.2-9.5l.8-.9-1.1-.9c-2.8-2.2-4.3-5.9-4.3-10.4 0-4.2 1-6.9 3.4-9.7l1.1-1.2-1.1-1.4c-2.7-3.5-3.1-9-1-13.8 1.7-3.8 6.9-8.4 10.8-9.6 1.2-.4 1.7-.7 1.8-1.2 1-5.1 2.3-8.1 5-10.8 2.1-2.1 3.6-3 6.3-3.7 4.7-1.2 9.7 0 13.1 3.1 3.5 3.2 5.2 9 3.7 12.8-.3.8-.7 1.6-1 1.9-.6.7-.5 1 1.2 2.1c1.4.9 2.5 3.1 2.5 5.1 0 2.2-1 4.1-2.8 5.3-1.4.9-1.7 1-3.5.9-2.3-.1-3.8-1.1-5.1-3.2-1.3-2.1-1.5-4-1.1-7.4.3-2.7.3-3.1-.2-3.8-1-1.6-3.5-1.4-4.3.3-.4.8-.4 1 .1 1.7.7 1.1.6 2-.2 2.2-1.5.5-2.9-2.3-2.2-4.4.4-1.3 2.3-3.1 3.3-3.1 2.4-.1 3.7.3 5 1.8.8.8.8.9.7 5.3l-.1 5.9c.9 1.8 2.5 2.8 4.1 2.6 2.5-.4 4-3.3 2.8-5.7-.6-1.4-1.5-1.9-3.4-2.2-2.1-.3-2.1-1-.1-3.1 2.6-2.8 2.9-5.6 1-9.7-1.8-3.8-5.4-5.9-10.1-6-3.1 0-4.6.4-6.7 1.7-2.8 1.8-5.9 7.4-6 10.4 0 .9.1 1.1 1.1 1.4 2 .7 4 3.4 4 5.5 0 .8.1.9 1.1.9 1.6 0 2.9.7 4 2.3 1.7 2.3 1.7 4.9 0 6.9-.7.8-1.2 1.1-1.8 1-1.1-.1-1.2-1.1-.2-2.1 1.2-1.2 1.3-2.3.6-3.8-.8-1.5-1.5-2-2.9-2-.8 0-1.1.2-1.6 1.2-.9 1.8-2.4 2.6-4.6 2.6-3.1 0-5-1.4-5-3.8 0-1.7 1.9-1.7 2.2-.1.1 1 1.3 1.7 2.8 1.7 1.1 0 1.5-.2 2.2-1 1-1.2 1.3-2.2 1-3.7-.6-3.6-4-4.5-8.3-2.3-2.8 1.5-6.4 5.1-7.5 7.5-1 2.3-1.4 6.6-.7 8.7.5 1.6 1.8 3.6 2.4 3.8.3.1.9-.3 1.5-1 1.3-1.4 2.3-1.8 4.4-1.8 1.9 0 3.3.9 2.7 1.8-.3.5-.7.6-2 .5-3.5-.2-5.2 2.4-3.6 5.5.8 1.5.6 2.4-.5 2.4-.9 0-1.9-1.4-2.2-2.9-.3-1.2-.8-.9-2.2 1-3.8 5.2-2.3 14 2.8 16.6.9.4 1.6 1 1.7 1.3.1.3-.5 1.1-1.5 2-2.1 2-2.9 3.7-2.9 6.2 0 4 1.7 7.2 4.6 8.6 1.4.7 2.1.8 3.9.7l2.2-.1.2-1.6c.1-.9.3-2.1.4-2.6.2-.9.1-1-.7-1.2-2.4-.6-4-2.5-4.4-5.2-.4-2.4 1.1-5.5 2.6-5.5 1 0 1.3.9.5 2.1-1.6 2.7-.5 5.9 2.1 6.4 1 .2 1.3.1 2.6-1.2.8-.8 1.8-1.5 2.2-1.6.4-.1.7-.6.8-1.3.4-2.6 2.7-4.6 5.2-4.6 1.9 0 1.9 1.9 0 2.3-2 .4-3 1.6-3 3.5 0 1.2.8 2.7 1.6 3.2.8.4 2.8.4 3.6 0 .8-.4 1.9.1 1.9 1 0 1.5-4.2 2.3-6.3 1.2-.6-.3-1.5-1.1-2-1.8l-.9-1.3-1.1 1c-3.1 2.7-3.7 9.9-1.2 15.2 1.1 2.3 2.7 4 4.9 5.2 1.6.8 1.9.9 5.7.9 3.9 0 4.1 0 6.1-1 2.6-1.3 4.5-3.2 5.8-5.8.8-1.7 1-2.5 1.1-4.8.1-2.4 0-3-.6-4.4-1.1-2.6-1.4-2.6-2.2-.3-1.2 3.4-3.8 5.3-7 5.4-1 0-1.2.2-1.7 1.3-.3.7-1 1.5-1.6 1.8-1.3.7-3.6.4-4.6-.5-1-.9-1.6-2.8-1.3-4 .2-.7.4-.8 1.1-.7.7.1.9.3 1.2 1.5.6 2.7 3.1 2.5 3.5-.3.3-1.7.7-2 2.2-1.6 2.3.6 4.5-.4 5.6-2.7 1.8-3.6 1.6-7.3-.5-9.4-.6-.6-1.1-1.3-1.1-1.5 0-.7.9-1.3 1.8-1 1.4.4 3.5-.8 4.3-2.4 1-1.9.8-4.7-.4-5.9-2-2.1-5.3-2.7-7.2-1.2-.6.5-1.4 1.4-1.7 2.1-.5 1-.8 1.3-1.4 1.3-2.7 0 .3-5.1 3.7-6.3 3.9-1.3 8.9 1.5 9.9 5.6.8 3.2-.8 6.8-3.5 8.3l-1.4.8.5 1.6c.3.9.6 1.9.6 2.3 0 .4.5 1.2 1.2 1.8 5.4 5.2 3.6 16-3.4 20.5-3 1.9-8.1 2.9-11.8 2.2z"/></g></svg>`;
+
+    function createNumberGrid() {
+        const numGrid = document.getElementById('numbersGrid');
+        numGrid.innerHTML = ''; selectedNumbers = [];
+        for(let i=1; i<=10; i++) {
+            const d = document.createElement('div');
+            d.className = 'check-item';
+            d.innerText = i;
+            d.onclick = () => {
+                d.classList.toggle('selected');
+                if(selectedNumbers.includes(i)) selectedNumbers = selectedNumbers.filter(n=>n!==i);
+                else selectedNumbers.push(i);
+            };
+            numGrid.appendChild(d);
+        }
+    }
+
+    function startGame() {
+        if(selectedNumbers.length === 0) return alert("Διάλεξε τουλάχιστον έναν αριθμό!");
+        attempts = 0; matched = []; flipped = []; memoryMode = true;
+        let allPairs = [];
+        selectedNumbers.forEach(n => {
+            for(let i=1; i<=10; i++) allPairs.push({q: `${n}×${i}`, a: n*i, val: n*i});
+        });
+        const selectedPairs = allPairs.sort(() => 0.5 - Math.random()).slice(0, 6);
+        deck = [];
+        selectedPairs.forEach(p => {
+            deck.push({c: p.q, v: p.val, type: 'q'});
+            deck.push({c: p.a, v: p.val, type: 'a'});
+        });
+        deck = deck.sort(() => 0.5 - Math.random());
+
+        document.getElementById('setup').classList.add('hidden');
+        document.getElementById('finish').classList.add('hidden');
+        document.getElementById('game').classList.remove('hidden');
+        document.getElementById('stats').classList.add('hidden');
+        document.getElementById('countdown').classList.remove('hidden');
+        runMemoryMode();
+    }
+
+    function runMemoryMode() {
+        let timeLeft = 15;
+        const cdBox = document.getElementById('countdown');
+        cdBox.innerText = `Απομνημόνευσε! ${timeLeft}`;
+        renderGrid();
+        let interval = setInterval(() => {
+            timeLeft--;
+            if(timeLeft < 0) {
+                clearInterval(interval);
+                memoryMode = false;
+                cdBox.classList.add('hidden');
+                document.getElementById('stats').classList.remove('hidden');
+                startTime = Date.now();
+                startTimer();
+                renderGrid();
+            } else {
+                cdBox.innerText = `Απομνημόνευσε! ${timeLeft}`;
+            }
+        }, 1000);
+    }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            const sec = Math.floor((Date.now() - startTime) / 1000);
+            const m = Math.floor(sec / 60).toString().padStart(2, '0');
+            const s = (sec % 60).toString().padStart(2, '0');
+            document.getElementById('timeVal').innerText = `${m}:${s}`;
+        }, 1000);
+    }
+
+    function renderGrid() {
+        const grid = document.getElementById('cardGrid');
+        grid.innerHTML = '';
+        document.getElementById('attemptVal').innerText = attempts;
+        deck.forEach((card, idx) => {
+            const isM = matched.includes(idx), isF = flipped.includes(idx);
+            const show = memoryMode || isM || isF;
+            const slot = document.createElement('div');
+            slot.className = `card-slot ${show ? 'is-flipped' : ''}`;
+            slot.onclick = () => { if(!memoryMode && !isM && !isF) handleFlip(idx); };
+            
+            const backClass = (card.type === 'a') ? 'card-back is-answer' : 'card-back';
+            
+            slot.innerHTML = `
+                <div class="card-inner">
+                    <div class="card-front">${brainSvg}</div>
+                    <div class="card-back ${backClass} ${isM ? 'matched' : ''}">${card.c}</div>
+                </div>`;
+            grid.appendChild(slot);
+        });
+    }
+
+    function handleFlip(idx) {
+        if(flipped.length >= 2) return;
+        flipped.push(idx);
+        renderGrid();
+
+        if(flipped.length === 2) {
+            attempts++;
+            const [i1, i2] = flipped;
+            if(deck[i1].v === deck[i2].v && deck[i1].type !== deck[i2].type) {
+                matched.push(i1, i2);
+                flipped = [];
+                setTimeout(renderGrid, 100);
+                if(matched.length === 12) setTimeout(endGame, 800);
+            } else {
+                setTimeout(() => {
+                    flipped = [];
+                    renderGrid();
+                }, 1000);
+            }
+        }
+    }
+
+    function endGame() {
+        clearInterval(timerInterval);
+        document.getElementById('game').classList.add('hidden');
+        document.getElementById('finish').classList.remove('hidden');
+        document.getElementById('finalTime').innerText = document.getElementById('timeVal').innerText;
+        document.getElementById('finalAttempts').innerText = attempts;
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    }
+
+    function resetToStart() {
+        clearInterval(timerInterval);
+        document.getElementById('game').classList.add('hidden');
+        document.getElementById('finish').classList.add('hidden');
+        document.getElementById('setup').classList.remove('hidden');
+        createNumberGrid();
+    }
+
+    createNumberGrid();
+</script>
+</body>
+</html>
