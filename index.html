@@ -261,7 +261,7 @@
     }
 
     function runMemoryMode() {
-        let timeLeft = 15;
+        let timeLeft = 20;
         const cdBox = document.getElementById('countdown');
         cdBox.innerText = `Απομνημόνευσε! ${timeLeft}`;
         renderGrid();
@@ -324,7 +324,7 @@
                 matched.push(i1, i2);
                 flipped = [];
                 setTimeout(renderGrid, 100);
-                if(matched.length === 12) setTimeout(endGame, 800);
+                if(matched.length === 12) setTimeout(endGame, 3000);
             } else {
                 setTimeout(() => {
                     flipped = [];
