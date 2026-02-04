@@ -22,4 +22,6 @@
 * JavaScript (Vanilla): Μηχανή παιχνιδιού, τυχαία ανακάτεμα καρτών και διαχείριση κατάστασης (State Management).
 * Canvas Confetti: Για τα εφέ εορτασμού στη νίκη.ut
 
-Δείτε το παιχνίδι εδω []
+
+## 🔎 PREVIEW
+Δείτε το παιχνίδι εδω [https://xenlian78.github.io/multiplication-braingame/]
